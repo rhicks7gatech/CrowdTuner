@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CrowdTuner - TV Calibration Patterns</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #0f0f1a;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* Menu screen */
+    .menu-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 40px;
+    }
+
+    .menu-screen.hidden {
+      display: none;
+    }
+
+    .logo {
+      font-size: 48px;
+      font-weight: bold;
+      color: #6c63ff;
+      margin-bottom: 10px;
+    }
+
+    .tagline {
+      color: #888;
+      margin-bottom: 60px;
+      font-size: 18px;
+    }
+
+    .pattern-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      max-width: 1200px;
+      width: 100%;
+    }
+
+    .pattern-card {
+      background: #1a1a2e;
+      border-radius: 16px;
+      padding: 30px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      border: 2px solid transparent;
+    }
+
+    .pattern-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 40px rgba(108, 99, 255, 0.2);
+      border-color: #6c63ff;
+    }
+
+    .pattern-card h3 {
+      font-size: 24px;
+      margin-bottom: 10px;
+      color: #fff;
+    }
+
+    .pattern-card p {
+      color: #888;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .pattern-icon {
+      font-size: 40px;
+      margin-bottom: 16px;
+    }
+
+    /* Pattern display (fullscreen) */
+    .pattern-display {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      display: none;
+      cursor: none;
+    }
+
+    .pattern-display.active {
+      display: block;
+    }
+
+    /* Exit hint */
+    .exit-hint {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    .exit-hint.visible {
+      opacity: 1;
+    }
+
+    /* Black Level / PLUGE Pattern */
+    .pluge-pattern {
+      width: 100%;
+      height: 100%;
+      display: flex;
+    }
+
+    .pluge-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .pluge-bar {
+      flex: 1;
+    }
+
+    /* Contrast Pattern */
+    .contrast-pattern {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .contrast-section {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .contrast-steps {
+      display: flex;
+      width: 80%;
+      height: 60%;
+    }
+
+    .contrast-step {
+      flex: 1;
+    }
+
+    /* Color Bars Pattern (SMPTE-style) */
+    .colorbars-pattern {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .colorbars-main {
+      flex: 7;
+      display: flex;
+    }
+
+    .colorbars-main > div {
+      flex: 1;
+    }
+
+    .colorbars-pluge {
+      flex: 1;
+      display: flex;
+    }
+
+    .colorbars-pluge > div {
+      flex: 1;
+    }
+
+    .colorbars-bottom {
+      flex: 2;
+      display: flex;
+    }
+
+    .colorbars-bottom > div {
+      flex: 1;
+    }
+
+    /* Grayscale Pattern */
+    .grayscale-pattern {
+      width: 100%;
+      height: 100%;
+      display: flex;
+    }
+
+    .grayscale-bar {
+      flex: 1;
+    }
+
+    /* Sharpness Pattern */
+    .sharpness-pattern {
+      width: 100%;
+      height: 100%;
+      background: #808080;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .sharpness-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 40px;
+    }
+
+    .sharpness-block {
+      width: 200px;
+      height: 200px;
+    }
+
+    .horizontal-lines,
+    .vertical-lines,
+    .diagonal-lines {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Instructions overlay */
+    .instructions {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: rgba(0, 0, 0, 0.85);
+      padding: 20px;
+      border-radius: 12px;
+      max-width: 300px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 100;
+    }
+
+    .instructions.visible {
+      opacity: 1;
+    }
+
+    .instructions h4 {
+      color: #6c63ff;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+
+    .instructions p {
+      color: #ccc;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <!-- Menu Screen -->
+  <div class="menu-screen" id="menuScreen">
+    <div class="logo">CrowdTuner</div>
+    <div class="tagline">Select a calibration pattern to display on your TV</div>
+
+    <div class="pattern-grid">
+      <div class="pattern-card" onclick="showPattern('pluge')">
+        <div class="pattern-icon">🌑</div>
+        <h3>Black Level (PLUGE)</h3>
+        <p>Adjust brightness to see subtle differences between near-black levels. Essential for shadow detail.</p>
+      </div>
+
+      <div class="pattern-card" onclick="showPattern('contrast')">
+        <div class="pattern-icon">☀️</div>
+        <h3>Contrast / White Clipping</h3>
+        <p>Set contrast so bright whites show detail without clipping. Prevents blown-out highlights.</p>
+      </div>
+
+      <div class="pattern-card" onclick="showPattern('colorbars')">
+        <div class="pattern-icon">🌈</div>
+        <h3>Color Bars (SMPTE)</h3>
+        <p>Industry-standard pattern for color accuracy, saturation, and hue calibration.</p>
+      </div>
+
+      <div class="pattern-card" onclick="showPattern('grayscale')">
+        <div class="pattern-icon">⬜</div>
+        <h3>Grayscale Ramp</h3>
+        <p>Check for smooth transitions from black to white. Reveals banding or color tinting issues.</p>
+      </div>
+
+      <div class="pattern-card" onclick="showPattern('sharpness')">
+        <div class="pattern-icon">🔲</div>
+        <h3>Sharpness Test</h3>
+        <p>Fine-tune sharpness to avoid artificial edge enhancement or blur. Look for clean lines.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pattern Displays -->
+  <div class="pattern-display" id="plugeDisplay">
+    <div class="pluge-pattern" id="plugePattern"></div>
+    <div class="instructions" id="plugeInstructions">
+      <h4>Black Level Adjustment</h4>
+      <p>Adjust your TV's <strong>Brightness</strong> setting until you can just barely see the difference between the darkest bars. The leftmost bar should be invisible against pure black.</p>
+    </div>
+  </div>
+
+  <div class="pattern-display" id="contrastDisplay">
+    <div class="contrast-pattern" id="contrastPattern"></div>
+    <div class="instructions" id="contrastInstructions">
+      <h4>Contrast Adjustment</h4>
+      <p>Adjust your TV's <strong>Contrast</strong> setting until you can see all the white steps distinctly. The brightest should be pure white without losing detail.</p>
+    </div>
+  </div>
+
+  <div class="pattern-display" id="colorbarsDisplay">
+    <div class="colorbars-pattern" id="colorbarsPattern"></div>
+    <div class="instructions" id="colorbarsInstructions">
+      <h4>Color Calibration</h4>
+      <p>Use this pattern to adjust <strong>Color/Saturation</strong> and <strong>Tint/Hue</strong>. Colors should appear vivid but natural, not oversaturated.</p>
+    </div>
+  </div>
+
+  <div class="pattern-display" id="grayscaleDisplay">
+    <div class="grayscale-pattern" id="grayscalePattern"></div>
+    <div class="instructions" id="grayscaleInstructions">
+      <h4>Grayscale Check</h4>
+      <p>Each bar should be a neutral gray with no color tint. Transitions should be smooth without visible banding or stepping.</p>
+    </div>
+  </div>
+
+  <div class="pattern-display" id="sharpnessDisplay">
+    <div class="sharpness-pattern" id="sharpnessPattern"></div>
+    <div class="instructions" id="sharpnessInstructions">
+      <h4>Sharpness Adjustment</h4>
+      <p>Adjust <strong>Sharpness</strong> until lines are crisp but without white halos or ringing around edges. Usually lower is better.</p>
+    </div>
+  </div>
+
+  <div class="exit-hint" id="exitHint">Press ESC or click anywhere to return to menu</div>
+
+  <script>
+    let currentPattern = null;
+    let hintTimeout = null;
+    let instructionsTimeout = null;
+
+    // Generate PLUGE pattern
+    function generatePluge() {
+      const container = document.getElementById('plugePattern');
+      container.innerHTML = '';
+
+      // Create sections with near-black values
+      // Left: Below black (should be invisible on properly calibrated TV)
+      // Center: Reference black
+      // Right: Above black (should be visible)
+
+      const values = [
+        { label: 'Below Black', levels: [0, 2, 4] },      // Should be invisible
+        { label: 'Reference', levels: [8, 8, 8] },        // Reference black
+        { label: 'Above Black', levels: [12, 16, 20] },   // Should be visible
+        { label: 'Gray Reference', levels: [32, 48, 64] } // Visible grays for reference
+      ];
+
+      values.forEach(section => {
+        const sectionDiv = document.createElement('div');
+        sectionDiv.className = 'pluge-section';
+
+        section.levels.forEach(level => {
+          const bar = document.createElement('div');
+          bar.className = 'pluge-bar';
+          bar.style.backgroundColor = `rgb(${level}, ${level}, ${level})`;
+          sectionDiv.appendChild(bar);
+        });
+
+        container.appendChild(sectionDiv);
+      });
+    }
+
+    // Generate Contrast pattern
+    function generateContrast() {
+      const container = document.getElementById('contrastPattern');
+      container.innerHTML = '';
+
+      // White clipping test - steps from 235 to 255
+      const topSection = document.createElement('div');
+      topSection.className = 'contrast-section';
+      topSection.style.background = '#000';
+
+      const steps = document.createElement('div');
+      steps.className = 'contrast-steps';
+
+      for (let i = 0; i < 10; i++) {
+        const step = document.createElement('div');
+        step.className = 'contrast-step';
+        const value = Math.round(230 + (i * 2.5));
+        step.style.backgroundColor = `rgb(${value}, ${value}, ${value})`;
+        steps.appendChild(step);
+      }
+
+      topSection.appendChild(steps);
+      container.appendChild(topSection);
+
+      // Full range reference
+      const bottomSection = document.createElement('div');
+      bottomSection.className = 'contrast-section';
+      bottomSection.style.background = 'linear-gradient(to right, #000, #fff)';
+      container.appendChild(bottomSection);
+    }
+
+    // Generate SMPTE Color Bars
+    function generateColorBars() {
+      const container = document.getElementById('colorbarsPattern');
+      container.innerHTML = '';
+
+      // Main color bars (75% intensity)
+      const mainColors = [
+        '#C0C0C0', // Gray
+        '#C0C000', // Yellow
+        '#00C0C0', // Cyan
+        '#00C000', // Green
+        '#C000C0', // Magenta
+        '#C00000', // Red
+        '#0000C0'  // Blue
+      ];
+
+      const mainSection = document.createElement('div');
+      mainSection.className = 'colorbars-main';
+      mainColors.forEach(color => {
+        const bar = document.createElement('div');
+        bar.style.backgroundColor = color;
+        mainSection.appendChild(bar);
+      });
+      container.appendChild(mainSection);
+
+      // PLUGE section
+      const plugeSection = document.createElement('div');
+      plugeSection.className = 'colorbars-pluge';
+      const plugeColors = ['#0000C0', '#000', '#C000C0', '#000', '#00C0C0', '#000', '#C0C0C0'];
+      plugeColors.forEach(color => {
+        const bar = document.createElement('div');
+        bar.style.backgroundColor = color;
+        plugeSection.appendChild(bar);
+      });
+      container.appendChild(plugeSection);
+
+      // Bottom reference bars
+      const bottomSection = document.createElement('div');
+      bottomSection.className = 'colorbars-bottom';
+      const bottomColors = ['#00214c', '#fff', '#320042', '#000', '#090909', '#000', '#1d1d1d', '#000', '#313131'];
+      bottomColors.forEach(color => {
+        const bar = document.createElement('div');
+        bar.style.backgroundColor = color;
+        bottomSection.appendChild(bar);
+      });
+      container.appendChild(bottomSection);
+    }
+
+    // Generate Grayscale ramp
+    function generateGrayscale() {
+      const container = document.getElementById('grayscalePattern');
+      container.innerHTML = '';
+
+      // 16 step grayscale
+      for (let i = 0; i < 16; i++) {
+        const bar = document.createElement('div');
+        bar.className = 'grayscale-bar';
+        const value = Math.round((i / 15) * 255);
+        bar.style.backgroundColor = `rgb(${value}, ${value}, ${value})`;
+        container.appendChild(bar);
+      }
+    }
+
+    // Generate Sharpness pattern with SVG
+    function generateSharpness() {
+      const container = document.getElementById('sharpnessPattern');
+      container.innerHTML = '';
+
+      // Create SVG patterns
+      const svgNS = 'http://www.w3.org/2000/svg';
+
+      // Horizontal lines
+      const horizSvg = document.createElementNS(svgNS, 'svg');
+      horizSvg.setAttribute('width', '200');
+      horizSvg.setAttribute('height', '200');
+      horizSvg.style.background = '#fff';
+
+      for (let y = 0; y < 200; y += 4) {
+        const line = document.createElementNS(svgNS, 'rect');
+        line.setAttribute('x', '0');
+        line.setAttribute('y', y.toString());
+        line.setAttribute('width', '200');
+        line.setAttribute('height', '2');
+        line.setAttribute('fill', '#000');
+        horizSvg.appendChild(line);
+      }
+
+      // Vertical lines
+      const vertSvg = document.createElementNS(svgNS, 'svg');
+      vertSvg.setAttribute('width', '200');
+      vertSvg.setAttribute('height', '200');
+      vertSvg.style.background = '#fff';
+
+      for (let x = 0; x < 200; x += 4) {
+        const line = document.createElementNS(svgNS, 'rect');
+        line.setAttribute('x', x.toString());
+        line.setAttribute('y', '0');
+        line.setAttribute('width', '2');
+        line.setAttribute('height', '200');
+        line.setAttribute('fill', '#000');
+        vertSvg.appendChild(line);
+      }
+
+      // Grid pattern
+      const gridSvg = document.createElementNS(svgNS, 'svg');
+      gridSvg.setAttribute('width', '200');
+      gridSvg.setAttribute('height', '200');
+      gridSvg.style.background = '#fff';
+
+      for (let i = 0; i < 200; i += 8) {
+        // Horizontal
+        const hLine = document.createElementNS(svgNS, 'rect');
+        hLine.setAttribute('x', '0');
+        hLine.setAttribute('y', i.toString());
+        hLine.setAttribute('width', '200');
+        hLine.setAttribute('height', '1');
+        hLine.setAttribute('fill', '#000');
+        gridSvg.appendChild(hLine);
+
+        // Vertical
+        const vLine = document.createElementNS(svgNS, 'rect');
+        vLine.setAttribute('x', i.toString());
+        vLine.setAttribute('y', '0');
+        vLine.setAttribute('width', '1');
+        vLine.setAttribute('height', '200');
+        vLine.setAttribute('fill', '#000');
+        gridSvg.appendChild(vLine);
+      }
+
+      // Fine horizontal lines
+      const fineHorizSvg = document.createElementNS(svgNS, 'svg');
+      fineHorizSvg.setAttribute('width', '200');
+      fineHorizSvg.setAttribute('height', '200');
+      fineHorizSvg.style.background = '#fff';
+
+      for (let y = 0; y < 200; y += 2) {
+        const line = document.createElementNS(svgNS, 'rect');
+        line.setAttribute('x', '0');
+        line.setAttribute('y', y.toString());
+        line.setAttribute('width', '200');
+        line.setAttribute('height', '1');
+        line.setAttribute('fill', '#000');
+        fineHorizSvg.appendChild(line);
+      }
+
+      // Fine vertical lines
+      const fineVertSvg = document.createElementNS(svgNS, 'svg');
+      fineVertSvg.setAttribute('width', '200');
+      fineVertSvg.setAttribute('height', '200');
+      fineVertSvg.style.background = '#fff';
+
+      for (let x = 0; x < 200; x += 2) {
+        const line = document.createElementNS(svgNS, 'rect');
+        line.setAttribute('x', x.toString());
+        line.setAttribute('y', '0');
+        line.setAttribute('width', '1');
+        line.setAttribute('height', '200');
+        line.setAttribute('fill', '#000');
+        fineVertSvg.appendChild(line);
+      }
+
+      // Checkerboard
+      const checkerSvg = document.createElementNS(svgNS, 'svg');
+      checkerSvg.setAttribute('width', '200');
+      checkerSvg.setAttribute('height', '200');
+      checkerSvg.style.background = '#fff';
+
+      for (let y = 0; y < 200; y += 4) {
+        for (let x = 0; x < 200; x += 4) {
+          if ((x + y) % 8 === 0) {
+            const rect = document.createElementNS(svgNS, 'rect');
+            rect.setAttribute('x', x.toString());
+            rect.setAttribute('y', y.toString());
+            rect.setAttribute('width', '4');
+            rect.setAttribute('height', '4');
+            rect.setAttribute('fill', '#000');
+            checkerSvg.appendChild(rect);
+          }
+        }
+      }
+
+      const grid = document.createElement('div');
+      grid.className = 'sharpness-grid';
+
+      [horizSvg, vertSvg, gridSvg, fineHorizSvg, fineVertSvg, checkerSvg].forEach(svg => {
+        const block = document.createElement('div');
+        block.className = 'sharpness-block';
+        block.appendChild(svg);
+        grid.appendChild(block);
+      });
+
+      container.appendChild(grid);
+    }
+
+    // Show pattern
+    function showPattern(patternId) {
+      // Hide menu
+      document.getElementById('menuScreen').classList.add('hidden');
+
+      // Generate and show pattern
+      const displayId = patternId + 'Display';
+      const display = document.getElementById(displayId);
+
+      // Generate pattern content
+      switch (patternId) {
+        case 'pluge':
+          generatePluge();
+          break;
+        case 'contrast':
+          generateContrast();
+          break;
+        case 'colorbars':
+          generateColorBars();
+          break;
+        case 'grayscale':
+          generateGrayscale();
+          break;
+        case 'sharpness':
+          generateSharpness();
+          break;
+      }
+
+      display.classList.add('active');
+      currentPattern = patternId;
+
+      // Show instructions briefly
+      const instructions = document.getElementById(patternId + 'Instructions');
+      instructions.classList.add('visible');
+
+      clearTimeout(instructionsTimeout);
+      instructionsTimeout = setTimeout(() => {
+        instructions.classList.remove('visible');
+      }, 8000);
+
+      // Enter fullscreen
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+
+      // Show exit hint
+      showExitHint();
+    }
+
+    // Hide pattern
+    function hidePattern() {
+      if (!currentPattern) return;
+
+      const display = document.getElementById(currentPattern + 'Display');
+      display.classList.remove('active');
+
+      document.getElementById('menuScreen').classList.remove('hidden');
+      currentPattern = null;
+
+      // Exit fullscreen
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+
+    // Show exit hint
+    function showExitHint() {
+      const hint = document.getElementById('exitHint');
+      hint.classList.add('visible');
+
+      clearTimeout(hintTimeout);
+      hintTimeout = setTimeout(() => {
+        hint.classList.remove('visible');
+      }, 3000);
+    }
+
+    // Event listeners
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        hidePattern();
+      } else if (currentPattern) {
+        showExitHint();
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (currentPattern && !e.target.closest('.instructions')) {
+        hidePattern();
+      }
+    });
+
+    document.addEventListener('mousemove', () => {
+      if (currentPattern) {
+        const instructions = document.getElementById(currentPattern + 'Instructions');
+        instructions.classList.add('visible');
+
+        clearTimeout(instructionsTimeout);
+        instructionsTimeout = setTimeout(() => {
+          instructions.classList.remove('visible');
+        }, 3000);
+      }
+    });
+  </script>
+</body>
+</html>
