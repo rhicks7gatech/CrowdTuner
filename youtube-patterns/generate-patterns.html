@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Generate Pattern Images for YouTube</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #1a1a1a;
+      color: #fff;
+      font-family: system-ui;
+    }
+    h1 { margin-bottom: 20px; }
+    .instructions {
+      background: #333;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+    }
+    .pattern-container {
+      margin-bottom: 40px;
+    }
+    .pattern-label {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+    canvas {
+      border: 2px solid #444;
+      max-width: 100%;
+      height: auto;
+    }
+    .download-btn {
+      background: #6c63ff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+    .download-btn:hover {
+      background: #5a52d5;
+    }
+  </style>
+</head>
+<body>
+  <h1>CrowdTuner Pattern Generator</h1>
+
+  <div class="instructions">
+    <h3>Instructions for YouTube:</h3>
+    <ol>
+      <li>Click "Download" for each pattern to save as PNG (3840x2160 - 4K)</li>
+      <li>Create a 1-hour video for each pattern using FFmpeg:
+        <code style="display:block; background:#222; padding:10px; margin:10px 0; border-radius:4px;">
+          ffmpeg -loop 1 -i pattern.png -c:v libx264 -t 3600 -pix_fmt yuv420p -vf "scale=3840:2160" output.mp4
+        </code>
+      </li>
+      <li>Upload to YouTube as unlisted or public</li>
+      <li>Add video IDs to the app code</li>
+    </ol>
+  </div>
+
+  <div id="patterns"></div>
+
+  <script>
+    const WIDTH = 3840;  // 4K
+    const HEIGHT = 2160;
+
+    const patterns = [
+      { id: 'pluge', name: 'Black Level (PLUGE)', generate: generatePluge },
+      { id: 'contrast', name: 'Contrast Test', generate: generateContrast },
+      { id: 'colorbars', name: 'Color Bars (SMPTE)', generate: generateColorBars },
+      { id: 'grayscale', name: 'Grayscale Ramp', generate: generateGrayscale },
+      { id: 'sharpness', name: 'Sharpness Test', generate: generateSharpness },
+    ];
+
+    function generatePluge(ctx) {
+      // PLUGE pattern - Picture Line-Up Generation Equipment
+      const sections = [
+        { levels: [0, 2, 4, 6] },      // Below black (should be invisible)
+        { levels: [8, 8, 8, 8] },       // Reference black
+        { levels: [12, 16, 20, 24] },   // Slightly above black
+        { levels: [32, 48, 64, 80] },   // Visible grays
+      ];
+
+      const sectionWidth = WIDTH / sections.length;
+
+      sections.forEach((section, sIdx) => {
+        const barHeight = HEIGHT / section.levels.length;
+        section.levels.forEach((level, bIdx) => {
+          ctx.fillStyle = `rgb(${level}, ${level}, ${level})`;
+          ctx.fillRect(sIdx * sectionWidth, bIdx * barHeight, sectionWidth, barHeight);
+        });
+      });
+
+      // Add labels
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.font = '48px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('Below Black', sectionWidth * 0.5, HEIGHT - 40);
+      ctx.fillText('Reference Black', sectionWidth * 1.5, HEIGHT - 40);
+      ctx.fillText('Above Black', sectionWidth * 2.5, HEIGHT - 40);
+      ctx.fillText('Gray Reference', sectionWidth * 3.5, HEIGHT - 40);
+    }
+
+    function generateContrast(ctx) {
+      // Top half: White clipping test (steps from 230 to 255)
+      const numSteps = 10;
+      const stepWidth = WIDTH / numSteps;
+
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, WIDTH, HEIGHT / 2);
+
+      for (let i = 0; i < numSteps; i++) {
+        const value = Math.round(230 + (i * 2.5));
+        ctx.fillStyle = `rgb(${value}, ${value}, ${value})`;
+        ctx.fillRect(i * stepWidth, HEIGHT * 0.15, stepWidth, HEIGHT * 0.2);
+      }
+
+      // Bottom half: Full gradient
+      const gradient = ctx.createLinearGradient(0, HEIGHT / 2, WIDTH, HEIGHT / 2);
+      gradient.addColorStop(0, '#000');
+      gradient.addColorStop(1, '#fff');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, HEIGHT / 2, WIDTH, HEIGHT / 2);
+
+      // Labels
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.font = '48px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('White Clipping Test - Adjust Contrast', WIDTH / 2, 80);
+      ctx.fillText('230', stepWidth * 0.5, HEIGHT * 0.42);
+      ctx.fillText('255', stepWidth * 9.5, HEIGHT * 0.42);
+    }
+
+    function generateColorBars(ctx) {
+      // SMPTE color bars (75% and 100% versions)
+      const colors100 = [
+        '#C0C0C0', '#C0C000', '#00C0C0', '#00C000',
+        '#C000C0', '#C00000', '#0000C0'
+      ];
+
+      const barWidth = WIDTH / 7;
+
+      // Main bars (top 67%)
+      colors100.forEach((color, i) => {
+        ctx.fillStyle = color;
+        ctx.fillRect(i * barWidth, 0, barWidth, HEIGHT * 0.67);
+      });
+
+      // PLUGE section (next 8%)
+      const plugeColors = ['#0000C0', '#000', '#C000C0', '#000', '#00C0C0', '#000', '#C0C0C0'];
+      plugeColors.forEach((color, i) => {
+        ctx.fillStyle = color;
+        ctx.fillRect(i * barWidth, HEIGHT * 0.67, barWidth, HEIGHT * 0.08);
+      });
+
+      // Bottom reference (25%)
+      const bottomColors = ['#00214C', '#FFF', '#320042', '#000', '#090909', '#000', '#1D1D1D', '#000', '#313131'];
+      const bottomWidth = WIDTH / bottomColors.length;
+      bottomColors.forEach((color, i) => {
+        ctx.fillStyle = color;
+        ctx.fillRect(i * bottomWidth, HEIGHT * 0.75, bottomWidth, HEIGHT * 0.25);
+      });
+    }
+
+    function generateGrayscale(ctx) {
+      // 16-step grayscale
+      const numSteps = 16;
+      const barWidth = WIDTH / numSteps;
+
+      for (let i = 0; i < numSteps; i++) {
+        const value = Math.round((i / (numSteps - 1)) * 255);
+        ctx.fillStyle = `rgb(${value}, ${value}, ${value})`;
+        ctx.fillRect(i * barWidth, 0, barWidth, HEIGHT);
+      }
+
+      // Labels at bottom
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillRect(0, HEIGHT - 100, WIDTH, 100);
+      ctx.fillStyle = '#fff';
+      ctx.font = '36px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('0%', barWidth * 0.5, HEIGHT - 40);
+      ctx.fillText('100%', barWidth * 15.5, HEIGHT - 40);
+      ctx.fillText('Grayscale Ramp - Check for banding or color tints', WIDTH / 2, HEIGHT - 40);
+    }
+
+    function generateSharpness(ctx) {
+      // Gray background
+      ctx.fillStyle = '#808080';
+      ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+      const blockSize = 400;
+      const spacing = 100;
+      const startX = (WIDTH - (blockSize * 3 + spacing * 2)) / 2;
+      const startY = (HEIGHT - (blockSize * 2 + spacing)) / 2;
+
+      // Row 1
+      drawHorizontalLines(ctx, startX, startY, blockSize);
+      drawVerticalLines(ctx, startX + blockSize + spacing, startY, blockSize);
+      drawGrid(ctx, startX + (blockSize + spacing) * 2, startY, blockSize);
+
+      // Row 2
+      drawFineHorizontal(ctx, startX, startY + blockSize + spacing, blockSize);
+      drawFineVertical(ctx, startX + blockSize + spacing, startY + blockSize + spacing, blockSize);
+      drawCheckerboard(ctx, startX + (blockSize + spacing) * 2, startY + blockSize + spacing, blockSize);
+
+      // Title
+      ctx.fillStyle = 'rgba(0,0,0,0.8)';
+      ctx.fillRect(0, 0, WIDTH, 120);
+      ctx.fillStyle = '#fff';
+      ctx.font = '56px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('Sharpness Test - Lines should be crisp without halos', WIDTH / 2, 75);
+    }
+
+    function drawHorizontalLines(ctx, x, y, size) {
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(x, y, size, size);
+      ctx.fillStyle = '#000';
+      for (let i = 0; i < size; i += 8) {
+        ctx.fillRect(x, y + i, size, 4);
+      }
+    }
+
+    function drawVerticalLines(ctx, x, y, size) {
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(x, y, size, size);
+      ctx.fillStyle = '#000';
+      for (let i = 0; i < size; i += 8) {
+        ctx.fillRect(x + i, y, 4, size);
+      }
+    }
+
+    function drawGrid(ctx, x, y, size) {
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(x, y, size, size);
+      ctx.fillStyle = '#000';
+      for (let i = 0; i < size; i += 16) {
+        ctx.fillRect(x, y + i, size, 1);
+        ctx.fillRect(x + i, y, 1, size);
+      }
+    }
+
+    function drawFineHorizontal(ctx, x, y, size) {
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(x, y, size, size);
+      ctx.fillStyle = '#000';
+      for (let i = 0; i < size; i += 4) {
+        ctx.fillRect(x, y + i, size, 2);
+      }
+    }
+
+    function drawFineVertical(ctx, x, y, size) {
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(x, y, size, size);
+      ctx.fillStyle = '#000';
+      for (let i = 0; i < size; i += 4) {
+        ctx.fillRect(x + i, y, 2, size);
+      }
+    }
+
+    function drawCheckerboard(ctx, x, y, size) {
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(x, y, size, size);
+      ctx.fillStyle = '#000';
+      for (let row = 0; row < size; row += 8) {
+        for (let col = 0; col < size; col += 8) {
+          if ((row + col) % 16 === 0) {
+            ctx.fillRect(x + col, y + row, 8, 8);
+          }
+        }
+      }
+    }
+
+    // Generate all patterns
+    patterns.forEach(pattern => {
+      const container = document.createElement('div');
+      container.className = 'pattern-container';
+
+      const label = document.createElement('div');
+      label.className = 'pattern-label';
+      label.textContent = pattern.name;
+      container.appendChild(label);
+
+      const canvas = document.createElement('canvas');
+      canvas.width = WIDTH;
+      canvas.height = HEIGHT;
+      canvas.style.width = '960px';
+      canvas.style.height = '540px';
+
+      const ctx = canvas.getContext('2d');
+      pattern.generate(ctx);
+      container.appendChild(canvas);
+
+      const btn = document.createElement('button');
+      btn.className = 'download-btn';
+      btn.textContent = `Download ${pattern.name} (4K PNG)`;
+      btn.onclick = () => {
+        const link = document.createElement('a');
+        link.download = `crowdtuner-${pattern.id}-4k.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      };
+      container.appendChild(btn);
+
+      document.getElementById('patterns').appendChild(container);
+    });
+  </script>
+</body>
+</html>

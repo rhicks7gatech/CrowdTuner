@@ -18,8 +18,8 @@ import { useCalibrationStore } from '../../store/useCalibrationStore';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteType = RouteProp<RootStackParamList, 'PatternDisplay'>;
 
-// Web patterns URL (GitHub Pages or your hosting)
-const WEB_PATTERNS_URL = 'https://crowdtuner.app/patterns';
+// Web patterns URL (GitHub Pages)
+const WEB_PATTERNS_URL = 'https://rhicks7gatech.github.io/CrowdTuner';
 
 // Pattern info with YouTube search terms
 // YouTube video IDs will be added once you upload the videos
